@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (c Client) RegisterDevice(deviceID string) (status string, err error) {
+func (c Client) RegisterDevice(deviceID string) (resp RegisterDeviceResponse, err error) {
 	var respBody RegisterDeviceResponse
 
 	reqBody := RegisterDeviceRequest{DeviceID: deviceID}
@@ -14,14 +14,15 @@ func (c Client) RegisterDevice(deviceID string) (status string, err error) {
 		return
 	}
 
-	return respBody.Status, nil
+	return respBody, nil
 }
 
 func (c Client) DeleteDevice(deviceID string) (err error) {
 	if err = c.do(http.MethodDelete, fmt.Sprintf("%s/%s", DEVICE, deviceID), nil, nil, nil); err != nil {
-		return
+		return err
 	}
-	return
+
+	return nil
 }
 
 type (

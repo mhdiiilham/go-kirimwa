@@ -11,10 +11,6 @@ type Client struct {
 	baseURl    string
 }
 
-type GeneralErrorResponse struct {
-	Message string `json:"message"`
-}
-
 func NewKirimWA(apiKey string) *Client {
 	return &Client{
 		httpClient: &http.Client{Timeout: 30 * time.Second},

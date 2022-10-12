@@ -40,9 +40,9 @@ func (c Client) do(method string, url string, queries map[string]string, body an
 	}
 
 	if response.StatusCode >= http.StatusBadRequest {
-		var errResp GeneralErrorResponse
+		var errResp ErrorResponse
 		json.NewDecoder(response.Body).Decode(&errResp)
-		return fmt.Errorf("%d %s", response.StatusCode, errResp.Message)
+		return errResp
 	}
 
 	if err = json.NewDecoder(response.Body).Decode(&dest); err != nil && dest != nil {

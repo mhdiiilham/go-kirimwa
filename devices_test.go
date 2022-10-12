@@ -2,10 +2,11 @@ package gokirimwa_test
 
 import (
 	"bytes"
-	"fmt"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	gokirimwa "github.com/mhdiiilham/go-kirimwa"
@@ -28,21 +29,50 @@ func TestDevices(t *testing.T) {
 
 func (suite *DeviceTestSuite) TestRegisterNewDevice() {
 	testCases := []struct {
-		name           string
-		deviceID       string
-		doMocks        func()
-		expectedStatus string
-		expectedErr    error
-	}{}
+		name         string
+		deviceID     string
+		doMocks      func()
+		expectedResp gokirimwa.RegisterDeviceResponse
+		expectedErr  error
+	}{
+		{
+			name:     "success",
+			deviceID: "fake_device_id",
+			doMocks: func() {
+				var bResp bytes.Buffer
+				json.NewEncoder(&bResp).Encode(gokirimwa.RegisterDeviceResponse{
+					ID:        "fake_device_id",
+					Status:    "disconnect",
+					CreatedAt: time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+				})
+
+				suite.
+					mockHTTP.
+					EXPECT().
+					Do(gomock.Any()).
+					Return(&http.Response{
+						StatusCode: http.StatusCreated,
+						Body:       ioutil.NopCloser(&bResp),
+					}, nil).
+					Times(1)
+			},
+			expectedResp: gokirimwa.RegisterDeviceResponse{
+				ID:        "fake_device_id",
+				Status:    "disconnect",
+				CreatedAt: time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+			},
+			expectedErr: nil,
+		},
+	}
 
 	t := suite.T()
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
+			assertion := assert.New(t)
 			tt.doMocks()
 
-			assertion := assert.New(t)
 			actual, actualErr := suite.client.RegisterDevice(tt.deviceID)
-			assertion.Equal(tt.expectedStatus, actual)
+			assertion.Equal(tt.expectedResp, actual)
 			assertion.Equal(tt.expectedErr, actualErr)
 		})
 	}
@@ -75,7 +105,7 @@ func (suite *DeviceTestSuite) TestDeleteDevice() {
 			expectedErr: nil,
 		},
 		{
-			name:     "return an error",
+			name:     "device not found",
 			deviceID: "fake_device_id",
 			doMocks: func() {
 				req, _ := http.NewRequest(http.MethodDelete, "https://api.kirimwa.id/v1/devices/fake_device_id", nil)
@@ -91,7 +121,7 @@ func (suite *DeviceTestSuite) TestDeleteDevice() {
 					}, nil).
 					Times(1)
 			},
-			expectedErr: fmt.Errorf("404 Error: Device not found."),
+			expectedErr: gokirimwa.ErrorResponse{Message: "Error: Device not found."},
 		},
 	}
 
